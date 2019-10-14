@@ -10,6 +10,7 @@ library(reshape2)
 library(biomaRt)
 library(gelnet)
 library(tidyverse)
+library(ggpubr)
 library(synapser) # use synapser instead of synapseClient
 
 # Synapse login required to get PCBC data
@@ -84,13 +85,20 @@ predicted.stemness.scores <- cbind(colsplit(predicted.stemness.scores$sample_nam
                                    stemness_score = predicted.stemness.scores$stemness_score)
 
 # boxplot
-p <- ggplot(predicted.stemness.scores, aes(x = type, y = stemness_score, alpha = 0.5, fill = type)) +
-  geom_boxplot(outlier.shape = 21, outlier.fill = "white", outlier.color = "white") + ggtitle('OCLR predicted Stemness index\nAdherent vs Suspension Cell types') +
+shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "a",3]) # p-value 0.00194
+shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "s",3]) # p-value 0.3466
+# let's not use t-test here as type a is not normally distributed
+p <- ggplot(predicted.stemness.scores, aes(x = type, y = stemness_score, fill = type)) +
+  stat_boxplot(geom ='errorbar', width = 0.2) +
+  geom_boxplot(outlier.shape = 21, outlier.fill = "white", outlier.color = "white",
+               lwd = 0.5, fatten = 0.7, width = 0.5) + ggtitle('OCLR predicted Stemness index\nAdherent vs Suspension Cell types') +
   theme_bw() + theme_Publication(base_size = 10) + ylab('Stemness Index') + xlab("") + 
-  guides(alpha = F, fill = F) + geom_jitter(position=position_jitter(width=.25), shape = 21) +
+  guides(fill = F) + geom_jitter(position=position_jitter(width=.25), shape = 21) +
   scale_x_discrete(labels = c("s" = "Suspension", 
                               "a" = "Adherent")) +
   scale_fill_manual(values = c("s" = "#F8766D",
                                "a" = "#00BFC4")) + 
+  stat_compare_means(color = "darkred") +
   labs(fill = "Type")
+p
 ggsave(plot = p, filename = 'results/oclr_stemness_index.png', device = 'png', width = 5, height = 5)
