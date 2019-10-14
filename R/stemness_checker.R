@@ -11,7 +11,11 @@ library(biomaRt)
 library(gelnet)
 library(tidyverse)
 library(synapser) # use synapser instead of synapseClient
-synLogin(email = args[1], password = args[2]) # your id and password from https://www.synapse.org/
+
+# Synapse login required to get PCBC data
+SYNAPSE_ID <- Sys.getenv("SYNAPSE_ID")
+SYNAPSE_PWD <- Sys.getenv("SYNAPSE_PWD")
+synLogin(email = SYNAPSE_ID, password = SYNAPSE_PWD) # your id and password from https://www.synapse.org/
 
 # source R scripts
 source('R/pubTheme.R') # themes
