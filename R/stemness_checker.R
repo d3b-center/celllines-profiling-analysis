@@ -1,7 +1,9 @@
 # Author: Komal S. Rathi
 # Date: 10/11/2019
 # Function: Run OCLR based Stemness profiling
-# Reference: http://tcgabiolinks.fmrp.usp.br/PanCanStem/mRNAsi.html
+# References: 
+  # Paper: https://www.cell.com/cell/pdf/S0092-8674(18)30358-1.pdf
+  # Tutorial: http://tcgabiolinks.fmrp.usp.br/PanCanStem/mRNAsi.html
 
 setwd('~/Projects/celllines-profiling-analysis/')
 library(xlsx)
