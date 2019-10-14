@@ -1,6 +1,7 @@
 # Author: Komal S. Rathi
 # Date: 10/11/2019
 # Function: Run OCLR based Stemness profiling
+# Reference: http://tcgabiolinks.fmrp.usp.br/PanCanStem/mRNAsi.html
 
 setwd('~/Projects/celllines-profiling-analysis/')
 library(xlsx)
@@ -39,16 +40,23 @@ if(file.exists('data/input.RData')){
 } else {
   print("Prepate test set")
   # read meta file
-  meta <- read.xlsx('data/201910_Cell_line_byDerivedType_PBTA_KF_ID.xlsx', 1)
+  meta <- read.xlsx('data/201910_Cell_line_byDerivedType_PBTA_KF_ID.xlsx', 2)
   meta <- meta[meta$experimental_strategy == 'RNA-Seq',]
   meta <- meta[,c('Kids_First_Biospecimen_ID','composition.type','tumor_descriptor','primary_site','reported_gender','sample_id')]
-  plyr::count(meta$composition.type) # 9 A, 7 S
+  plyr::count(meta$composition.type) # 9 A, 7 S, 12 solid_tissue
   meta$label <- paste0(meta$sample_id,'_', tolower(meta$composition.type))
-  
+  rownames(meta) <- meta$Kids_First_Biospecimen_ID
+   
   # read expression data (stranded)
   dat <- readRDS('data/pbta-gene-expression-rsem-fpkm.stranded.rds')
+  meta <- meta[which(meta$Kids_First_Biospecimen_ID %in% colnames(dat)),] # "BS_BYCX6VK1" "BS_T3DGY9J9" missing tumors
   dat <- dat[,colnames(dat) %in% c('gene_id', as.character(meta$Kids_First_Biospecimen_ID))] # subset to meta file
-  colnames(dat)[2:ncol(dat)] <- meta$label
+  meta <- meta[colnames(dat)[2:ncol(dat)],]
+  if(identical(colnames(dat)[2:ncol(dat)], as.character(meta$Kids_First_Biospecimen_ID))){
+    colnames(dat)[2:ncol(dat)] <- meta$label
+  } else {
+    print("Please check mapping")
+  }
   
   # reduce data
   dat <- dat[apply(dat[,-1], 1, function(x) !all(x==0)),] # remove all rows with only 0
@@ -87,7 +95,12 @@ predicted.stemness.scores <- cbind(colsplit(predicted.stemness.scores$sample_nam
 # boxplot
 shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "a",3]) # p-value 0.00194
 shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "s",3]) # p-value 0.3466
-# let's not use t-test here as type a is not normally distributed
+shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "solid_tissue",3]) # p-value 0.2179
+
+# let's use Kruskal Wallis here as type a is not normally distributed
+# Adherent outliers: 7316-3058, 7316-913
+predicted.stemness.scores$type <- factor(predicted.stemness.scores$type, levels = c("a", "solid_tissue", "s"))
+my_comparisons <- list(c("s", "a"), c("s", "solid_tissue"), c("a", "solid_tissue"))
 p <- ggplot(predicted.stemness.scores, aes(x = type, y = stemness_score, fill = type)) +
   stat_boxplot(geom ='errorbar', width = 0.2) +
   geom_boxplot(outlier.shape = 21, outlier.fill = "white", outlier.color = "white",
@@ -95,10 +108,13 @@ p <- ggplot(predicted.stemness.scores, aes(x = type, y = stemness_score, fill = 
   theme_bw() + theme_Publication(base_size = 10) + ylab('Stemness Index') + xlab("") + 
   guides(fill = F) + geom_jitter(position=position_jitter(width=.25), shape = 21) +
   scale_x_discrete(labels = c("s" = "Suspension", 
-                              "a" = "Adherent")) +
+                              "a" = "Adherent",
+                              "solid_tissue" = "Patient Tumor")) +
   scale_fill_manual(values = c("s" = "#F8766D",
-                               "a" = "#00BFC4")) + 
-  stat_compare_means(color = "darkred") +
+                               "a" = "#00BFC4",
+                               "solid_tissue" = "#00BA38")) +
+  stat_compare_means(comparisons = my_comparisons, color = "darkred", size = 3) +
+  stat_compare_means(label.y = 1.4, color = "darkred") +
   labs(fill = "Type")
 p
 ggsave(plot = p, filename = 'results/oclr_stemness_index.png', device = 'png', width = 5, height = 5)
