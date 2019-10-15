@@ -101,13 +101,16 @@ shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "so
 
 # let's use Kruskal Wallis here as type a is not normally distributed
 # Adherent outliers: 7316-3058, 7316-913
+# Solid tissue outliers: 7316-913
 predicted.stemness.scores$type <- factor(predicted.stemness.scores$type, levels = c("a", "solid_tissue", "s"))
 my_comparisons <- list(c("s", "a"), c("s", "solid_tissue"), c("a", "solid_tissue"))
+predicted.stemness.scores$label <- ifelse(predicted.stemness.scores$type %in% c("a","solid_tissue") & predicted.stemness.scores$stemness_score > 0.5, predicted.stemness.scores$sample_name, "")
 p <- ggplot(predicted.stemness.scores, aes(x = type, y = stemness_score, fill = type)) +
   stat_boxplot(geom ='errorbar', width = 0.2) +
   geom_boxplot(outlier.shape = 21, outlier.fill = "white", outlier.color = "white",
                lwd = 0.5, fatten = 0.7, width = 0.5) + ggtitle('OCLR predicted Stemness index\nAdherent vs Suspension Cell types') +
   theme_bw() + theme_Publication(base_size = 10) + ylab('Stemness Index') + xlab("") + 
+  geom_text(aes(label = label), size = 3, hjust = 0.7, vjust = -0.5) +
   guides(fill = F) + geom_jitter(position=position_jitter(width=.25), shape = 21) +
   scale_x_discrete(labels = c("s" = "Suspension", 
                               "a" = "Adherent",
