@@ -56,14 +56,15 @@ if(file.exists('data/input-counts.RData')){
 # perform differential expression
 counts.collapsed <- counts.collapsed[,grep('solid_tissue', colnames(counts.collapsed), invert = T)]
 meta <- data.frame(id = colnames(counts.collapsed), type = gsub(".*_","",colnames(counts.collapsed)))
+rownames(meta) <- meta$id
 
 # voom transformation
 mydesign <- model.matrix(~0+type, meta)
-rownames(mydesign) <- meta$id
 colnames(mydesign) <- sub('type','',colnames(mydesign))
 tmp.voom <- voom(counts = as.matrix(counts.collapsed), design = mydesign)
 tmp.voom <- tmp.voom$E
 
+# 1. unpaired analysis
 # differential expression
 fit <- lmFit(tmp.voom, design = mydesign)
 myConts <- paste0('s','-','a')
@@ -74,8 +75,33 @@ fit2 <- eBayes(fit2)
 
 # format output and split into up and down genes
 tmpOut <- topTable(fit2, number = Inf, p.value = 0.05)[,c("logFC", "P.Value", "adj.P.Val")]
-up <- tmpOut[which(tmpOut$logFC > 0),]
-down <- tmpOut[which(tmpOut$logFC < 0),]
+up <- tmpOut[which(tmpOut$logFC > 0),] # 2193
+down <- tmpOut[which(tmpOut$logFC < 0),] # 485
 write.table(rownames(up), file = 'data/stemchecker-input-up.txt', quote = F, row.names = F, col.names = F)
 write.table(rownames(down), file = 'data/stemchecker-input-down.txt', quote = F, row.names = F, col.names = F)
 
+# 2. paired analysis
+meta$pairs <- gsub('_.*','',meta$id)
+meta <- meta[-which(meta$pairs %in% c('7316-1769','7316-2176','7316-2151','7316-2189')),]
+counts.paired <- counts.collapsed[,rownames(meta)]
+if(identical(colnames(counts.paired), rownames(meta))){
+  print("Matched samples")
+} else {
+  return(NULL)
+}
+
+# voom transformation
+mydesign <- model.matrix(~0+type, meta)
+colnames(mydesign) <- sub('type','',colnames(mydesign))
+tmp.voom <- voom(counts = as.matrix(counts.paired), design = mydesign)
+tmp.voom <- tmp.voom$E
+
+# differential expression
+pairs <- factor(meta$pairs)
+type <- factor(meta$type, levels = c("a","s"))
+mydesign <- model.matrix(~pairs+type)
+fit <- lmFit(tmp.voom, mydesign)
+fit2 <- eBayes(fit)
+
+# format output and split into up and down genes
+tmpOut <- topTable(fit2, coef = "types", number = Inf, p.value = 0.05) # 0 rows
