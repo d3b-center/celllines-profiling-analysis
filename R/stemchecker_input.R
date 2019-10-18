@@ -1,6 +1,7 @@
 # Author: Komal S. Rathi
 # Date: 10/17/2019
 # Function: Differential expression (unpaired suspension vs adhesion)
+# Code to create input for stemchecker and cibersort
 # References: 
 # Paper: https://www.cell.com/cell/pdf/S0092-8674(18)30358-1.pdf
 # Tutorial: http://tcgabiolinks.fmrp.usp.br/PanCanStem/mRNAsi.html
@@ -51,6 +52,7 @@ if(file.exists('data/input-counts.RData')){
     as.data.frame()
   
   save(counts.collapsed, file = 'data/input-counts.RData')
+  write.table(counts.collapsed, file = 'data/input-counts-cibersort.txt', quote = F, sep = "\t")
 }
 
 # perform differential expression
