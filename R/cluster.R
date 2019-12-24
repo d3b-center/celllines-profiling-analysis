@@ -17,7 +17,7 @@ rownames(expr.collapsed) <- NULL
 expr.collapsed <- unique(expr.collapsed)
 
 # t-SNE and plot
-set.seed(1234)
+set.seed(42)
 tsneOut <- Rtsne(t(expr.collapsed), initial_dims = 50, perplexity = 8, max_iter = 1000)
 tsneOut <- data.frame(tsneOut$Y, df)
 p <- ggplot(tsneOut, aes(X1, X2, color = type)) +

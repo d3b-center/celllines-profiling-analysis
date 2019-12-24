@@ -42,17 +42,20 @@ if(file.exists('data/input.RData')){
 } else {
   print("Prepate test set")
   # read meta file
-  meta <- read.xlsx('data/201910_Cell_line_byDerivedType_PBTA_KF_ID.xlsx', 2)
-  meta <- meta[meta$experimental_strategy == 'RNA-Seq',]
-  meta <- meta[,c('Kids_First_Biospecimen_ID','composition.type','tumor_descriptor','primary_site','reported_gender','sample_id')]
-  plyr::count(meta$composition.type) # 9 A, 7 S, 12 solid_tissue
+  meta <- read.xlsx('data/201910_Cell_line_byDerivedType_PBTA_KF_ID.xlsx', 3)
+  meta <- meta %>%
+    filter(experimental_strategy == 'RNA-Seq') %>%
+    dplyr::select(c(Kids_First_Biospecimen_ID,composition.type,tumor_descriptor,primary_site,reported_gender,sample_id))
   meta$label <- paste0(meta$sample_id,'_', tolower(meta$composition.type))
   rownames(meta) <- meta$Kids_First_Biospecimen_ID
    
   # read expression data (stranded)
   dat <- readRDS('data/pbta-gene-expression-rsem-fpkm.stranded.rds')
-  meta <- meta[which(meta$Kids_First_Biospecimen_ID %in% colnames(dat)),] # "BS_BYCX6VK1" "BS_T3DGY9J9" missing tumors
-  dat <- dat[,colnames(dat) %in% c('gene_id', as.character(meta$Kids_First_Biospecimen_ID))] # subset to meta file
+  meta <- meta %>%
+    filter(Kids_First_Biospecimen_ID %in% colnames(dat)) # "BS_BYCX6VK1" "BS_T3DGY9J9" missing tumors
+  rownames(meta) <- meta$Kids_First_Biospecimen_ID
+  plyr::count(meta$composition.type) # 9 A, 7 S, 12 solid_tissue
+  dat <- dat[,which(colnames(dat) %in% c('gene_id', as.character(meta$Kids_First_Biospecimen_ID)))] # subset to meta file
   meta <- meta[colnames(dat)[2:ncol(dat)],]
   if(identical(colnames(dat)[2:ncol(dat)], as.character(meta$Kids_First_Biospecimen_ID))){
     colnames(dat)[2:ncol(dat)] <- meta$label
@@ -95,9 +98,9 @@ predicted.stemness.scores <- cbind(colsplit(predicted.stemness.scores$sample_nam
                                    stemness_score = predicted.stemness.scores$stemness_score)
 
 # boxplot
-shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "a",3]) # p-value 0.00194
-shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "s",3]) # p-value 0.3466
-shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "solid_tissue",3]) # p-value 0.2179
+shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "a",3]) # p-value 0.001936
+shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "s",3]) # p-value 0.3465
+shapiro.test(x = predicted.stemness.scores[predicted.stemness.scores$type == "solid_tissue",3]) # p-value 0.05523
 
 # let's use Kruskal Wallis here as type a is not normally distributed
 # Adherent outliers: 7316-3058, 7316-913
