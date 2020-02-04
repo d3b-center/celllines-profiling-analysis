@@ -14,14 +14,14 @@ library(tidyverse)
 library(limma)
 
 # create input expected count matrix
-if(file.exists('data/input-counts.RData')){
+if(file.exists('data/count-matrix.RData')){
   print("Counts file exists")
-  load('data/input-counts.RData')
+  load('data/count-matrix.RData')
 } else {
   # read meta file
   meta <- read.xlsx('data/201910_Cell_line_byDerivedType_PBTA_KF_ID.xlsx', 3)
   meta <- meta %>%
-    filter(experimental_strategy == 'RNA-Seq') %>%
+    filter(experimental_strategy == 'RNA-Seq' & RNA_library == "stranded") %>%
     dplyr::select(c(Kids_First_Biospecimen_ID,composition.type,tumor_descriptor,primary_site,reported_gender,sample_id))
   meta$label <- paste0(meta$sample_id,'_', tolower(meta$composition.type))
   rownames(meta) <- meta$Kids_First_Biospecimen_ID
@@ -56,7 +56,7 @@ if(file.exists('data/input-counts.RData')){
     column_to_rownames(var="gene_symbol") %>%
     as.data.frame()
   
-  save(counts.collapsed, file = 'data/input-counts.RData')
+  save(counts.collapsed, file = 'data/count-matrix.RData')
 }
 
 # perform differential expression
@@ -73,7 +73,9 @@ tmp.voom <- tmp.voom$E
 # 1. unpaired analysis
 # differential expression
 fit <- lmFit(tmp.voom, design = mydesign)
-myConts <- c(paste0('s','-','a'), paste0('s','-','tissue'))
+myConts <- c(paste0('s','-','a'), 
+             paste0('s','-','tissue'),
+             paste0('a','-','tissue'))
 print(paste0("Contrast: ", myConts))
 contrast.matrix = makeContrasts(contrasts = myConts, levels = mydesign)
 fit2 <- contrasts.fit(fit, contrast.matrix)
@@ -85,6 +87,7 @@ tmpOut$Gene <- rownames(tmpOut)
 tmpOut <- tmpOut[,c("Gene","logFC","adj.P.Val")]
 up <- tmpOut[which(tmpOut$logFC > 0),] # 2966
 down <- tmpOut[which(tmpOut$logFC < 0),] # 832
+write.table(tmpOut, file = "results/limma/sus_vs_adh_limma.txt", quote = F, sep = "\t", row.names = F)
 # for Metacore/IPA
 write.table(tmpOut[which(abs(tmpOut$logFC) > 1),], file = "results/limma/s_vs_a_limma_logfc1.txt", quote = F, row.names = F, sep = "\t")
 write.table(tmpOut[which(tmpOut$logFC > 1),], file = "results/limma/s_vs_a_up_logfc1.txt", quote = F, row.names = F, sep = "\t")
@@ -99,6 +102,7 @@ tmpOut$Gene <- rownames(tmpOut)
 tmpOut <- tmpOut[,c("Gene","logFC","adj.P.Val")]
 up <- tmpOut[which(tmpOut$logFC > 0),] # 655
 down <- tmpOut[which(tmpOut$logFC < 0),] # 2271
+write.table(tmpOut, file = "results/limma/sus_vs_tissue_limma.txt", quote = F, sep = "\t", row.names = F)
 # for Metacore/IPA
 write.table(tmpOut[which(abs(tmpOut$logFC) > 1),], file = "results/limma/s_vs_tissue_limma_logfc1.txt", quote = F, row.names = F, sep = "\t")
 write.table(tmpOut[which(tmpOut$logFC > 1),], file = "results/limma/s_vs_tissue_up_logfc1.txt", quote = F, row.names = F, sep = "\t")
@@ -106,6 +110,18 @@ write.table(tmpOut[which(tmpOut$logFC < -1),], file = "results/limma/s_vs_tissue
 # for stemchecker
 write.table(rownames(up), file = 'data/stemchecker-input-svstissue-up.txt', quote = F, row.names = F, col.names = F)
 write.table(rownames(down), file = 'data/stemchecker-input-svstissue-down.txt', quote = F, row.names = F, col.names = F)
+
+# Adhesion vs. Solid Tissue
+tmpOut <- topTable(fit2, coef = 3, number = Inf, p.value = 0.05)[,c("logFC", "P.Value", "adj.P.Val")]
+tmpOut$Gene <- rownames(tmpOut)
+tmpOut <- tmpOut[,c("Gene","logFC","adj.P.Val")]
+up <- tmpOut[which(tmpOut$logFC > 0),] # 1264
+down <- tmpOut[which(tmpOut$logFC < 0),] # 8588
+write.table(tmpOut, file = "results/limma/adh_vs_tissue_limma.txt", quote = F, sep = "\t", row.names = F)
+# for Metacore/IPA
+write.table(tmpOut[which(abs(tmpOut$logFC) > 1),], file = "results/limma/a_vs_tissue_limma_logfc1.txt", quote = F, row.names = F, sep = "\t")
+write.table(tmpOut[which(tmpOut$logFC > 1),], file = "results/limma/a_vs_tissue_up_logfc1.txt", quote = F, row.names = F, sep = "\t")
+write.table(tmpOut[which(tmpOut$logFC < -1),], file = "results/limma/a_vs_tissue_down_logfc1.txt", quote = F, row.names = F, sep = "\t")
 
 # # 2. paired analysis - not feasible
 # meta$pairs <- gsub('_.*','',meta$id)

@@ -1,6 +1,6 @@
 # Author: Komal S. Rathi
-# Date: 11/26/2019
-# Function: create GSEA input files (web version)
+# Date: 02/03/2020
+# Function: create GSEA input files (web version) for K27 mut vs non-mut samples
 # The input files should be first normalized using the DESeq2 module of GenePattern
 
 # libraries
@@ -9,6 +9,9 @@ library(reshape2)
 
 # expected counts
 load('data/count-matrix.RData')
+k27 <- read.delim('data/K27_mutated_samples.txt')
+k27$mutated <- "mutated"
+k27$snames <- paste0(k27$sample_id, "_",k27$composition.type)
 # counts.collapsed <- log2(counts.collapsed + 1)  
 
 # counts.collapsed
@@ -22,6 +25,16 @@ gsea.input <- function(counts.collapsed, groups, gct.file, cls.file, control, tr
   # make file GSEA web version
   # expression file  -  counts file 
   df <- data.frame(snames = colnames(counts.collapsed), colsplit(colnames(counts.collapsed), pattern = "_", names = c("sample","type")))
+  df <- df %>%
+    full_join(k27[,c("snames", "mutated")], by = c("snames" =  "snames"))
+  df$mutated[is.na(df$mutated)] <- "wt"
+  df$type <- paste0(df$type, '_',df$mutated)
+  if(identical(colnames(counts.collapsed), df$snames)){
+    df$snames <- paste0(df$snames, "_", df$mutated)
+    colnames(counts.collapsed) <- df$snames
+  }  else {
+    print("Does not match")
+  }
   df <- df[order(df$type),]
   df <- df %>%  
     filter(type %in% groups)
@@ -48,14 +61,20 @@ gsea.input <- function(counts.collapsed, groups, gct.file, cls.file, control, tr
   # write.table(chp, file = 'data/gsea_input/mapping.chip', quote = F, sep = "\t", row.names = F)
 }
 
-gsea.input(counts.collapsed, groups = c("s","a"), 
-           gct.file = 'data/gsea_input/raw/input_mat_s_vs_a.gct',
-           cls.file = 'data/gsea_input/phenotype_s_vs_a.cls',
-           control = '# Adhesion',
-           treat = 'Suspension')
+gsea.input(counts.collapsed, groups = c("a_mutated","a_wt"), 
+           gct.file = 'data/gsea_input/raw/input_mat_adhesion_mutvswt.gct',
+           cls.file = 'data/gsea_input/phenotype_adhesion_mutvswt.cls',
+           control = '# Mut',
+           treat = 'WT')
 
-gsea.input(counts.collapsed, groups = c("s","solid_tissue"), 
-           gct.file = 'data/gsea_input/raw/input_mat_s_vs_st.gct',
-           cls.file = 'data/gsea_input/phenotype_s_vs_st.cls',
-           control = '# Suspension',
-           treat = 'Solid_Tissue')
+gsea.input(counts.collapsed, groups = c("s_mutated","s_wt"), 
+           gct.file = 'data/gsea_input/raw/input_mat_suspension_mutvswt.gct',
+           cls.file = 'data/gsea_input/phenotype_suspension_mutvswt.cls',
+           control = '# Mut',
+           treat = 'WT')
+
+gsea.input(counts.collapsed, groups = c("solid_tissue_mutated","solid_tissue_wt"), 
+           gct.file = 'data/gsea_input/raw/input_mat_solidtissue_mutvswt.gct',
+           cls.file = 'data/gsea_input/phenotype_solidtissue_mutvswt.cls',
+           control = '# Mut',
+           treat = 'WT')

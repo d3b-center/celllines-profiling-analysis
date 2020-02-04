@@ -4,7 +4,7 @@
   # expr - expression matrix with rownames collapse to HUGO genes and colnames are samples
   # fnOut - Test data output
 
-expr <- 'data/input.RData'
+expr <- 'data/fpkm-matrix.RData'
 fnSig <- 'data/pcbc-stemsig.tsv'
 
 main.predict <- function(fnSig = "data/pcbc-stemsig.tsv", expr, fnOut = "data/mRNA_StemScore.tsv") {

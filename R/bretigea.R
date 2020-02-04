@@ -10,7 +10,7 @@ library(ggpubr)
 
 # load data
 source('R/pubTheme.R')
-load('data/input.RData') # FPKM
+load('data/fpkm-matrix.RData') # FPKM
 
 # create function
 plot.bretigea <- function(expr, title){

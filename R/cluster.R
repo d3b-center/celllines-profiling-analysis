@@ -7,7 +7,7 @@ library(reshape2)
 library(ggplot2)
 
 # load libraries and source plotting theme
-load('data/input.RData')
+load('data/fpkm-matrix.RData')
 source('R/pubTheme.R')
 
 # format data for t-SNE

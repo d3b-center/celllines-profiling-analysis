@@ -36,59 +36,14 @@ if(file.exists('data/pcbc-stemsig.tsv')){
   auc <- main.train(fnOut = 'data/pcbc-stemsig.tsv', fnGenes = NULL)
 }
 
-# prepare test set
-if(file.exists('data/input.RData')){
-  print("Test set ready")
-} else {
-  print("Prepate test set")
-  # read meta file
-  meta <- read.xlsx('data/201910_Cell_line_byDerivedType_PBTA_KF_ID.xlsx', 3)
-  meta <- meta %>%
-    filter(experimental_strategy == 'RNA-Seq') %>%
-    dplyr::select(c(Kids_First_Biospecimen_ID,composition.type,tumor_descriptor,primary_site,reported_gender,sample_id))
-  meta$label <- paste0(meta$sample_id,'_', tolower(meta$composition.type))
-  rownames(meta) <- meta$Kids_First_Biospecimen_ID
-   
-  # read expression data (stranded)
-  dat <- readRDS('data/pbta-gene-expression-rsem-fpkm.stranded.rds')
-  meta <- meta %>%
-    filter(Kids_First_Biospecimen_ID %in% colnames(dat)) # "BS_BYCX6VK1" "BS_T3DGY9J9" missing tumors
-  rownames(meta) <- meta$Kids_First_Biospecimen_ID
-  plyr::count(meta$composition.type) # 9 A, 7 S, 12 solid_tissue
-  dat <- dat[,which(colnames(dat) %in% c('gene_id', as.character(meta$Kids_First_Biospecimen_ID)))] # subset to meta file
-  meta <- meta[colnames(dat)[2:ncol(dat)],]
-  if(identical(colnames(dat)[2:ncol(dat)], as.character(meta$Kids_First_Biospecimen_ID))){
-    colnames(dat)[2:ncol(dat)] <- meta$label
-  } else {
-    print("Please check mapping")
-  }
-  
-  # reduce data
-  dat <- dat[apply(dat[,-1], 1, function(x) !all(x==0)),] # remove all rows with only 0
-  dat <- dat[grep('_PAR_', dat$gene_id, invert = T),] # remove PAR_Y chr genes
-  
-  # convert into a matrix of gene symbol x sample name
-  expr.collapsed <- dat %>% 
-    separate(gene_id, c("gene_id", "gene_symbol"), sep = "\\_", extra = "merge") %>%
-    pivot_longer(-c(gene_id, gene_symbol), names_to = "sample_name", values_to = "fpkm") %>% 
-    group_by(gene_id) %>%
-    mutate(means = mean(fpkm)) %>% 
-    group_by(gene_symbol) %>%
-    filter(means == max(means)) %>% 
-    dplyr::select(-gene_id) %>% unique() %>%
-    pivot_wider(id_cols = "gene_symbol", names_from = "sample_name", values_from = "fpkm") %>%
-    column_to_rownames(var="gene_symbol") %>%
-    as.data.frame()
-  
-  # save input matrix (test data)
-  save(expr.collapsed, file = 'data/input.RData')
-}
+# load FPKM matrix
+load('data/fpkm-matrix.RData')
 
 # use predict function
 if(file.exists('data/mRNA_StemScore.tsv')){
   print("Predicted scores ready")
 } else {
-  main.predict(fnSig = 'data/pcbc-stemsig.tsv', expr = 'data/input.RData', fnOut = "data/mRNA_StemScore.tsv")
+  main.predict(fnSig = 'data/pcbc-stemsig.tsv', expr = 'data/fpkm-matrix.RData', fnOut = "data/mRNA_StemScore.tsv")
 }
 
 # visualization

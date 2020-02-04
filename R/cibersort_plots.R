@@ -5,7 +5,7 @@
 library(pheatmap)
 
 # sort samples cibersort input
-dat <- get(load('data/input.RData'))
+dat <- get(load('data/fpkm-matrix.RData'))
 # dat <- read.delim('data/input-counts-cibersort.txt',  check.names = F)
 annot <- data.frame(type = sub('.*_','', colnames(dat)), id = colnames(dat))
 rownames(annot) <- colnames(dat)
