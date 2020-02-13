@@ -75,7 +75,7 @@ tmp.voom <- tmp.voom$E
 fit <- lmFit(tmp.voom, design = mydesign)
 myConts <- c(paste0('s','-','a'), 
              paste0('s','-','tissue'),
-             paste0('a','-','tissue'))
+             paste0('tissue','-','a'))
 print(paste0("Contrast: ", myConts))
 contrast.matrix = makeContrasts(contrasts = myConts, levels = mydesign)
 fit2 <- contrasts.fit(fit, contrast.matrix)
@@ -87,11 +87,10 @@ tmpOut$Gene <- rownames(tmpOut)
 tmpOut <- tmpOut[,c("Gene","logFC","adj.P.Val")]
 up <- tmpOut[which(tmpOut$logFC > 0),] # 2966
 down <- tmpOut[which(tmpOut$logFC < 0),] # 832
-write.table(tmpOut, file = "results/limma/sus_vs_adh_limma.txt", quote = F, sep = "\t", row.names = F)
+write.table(tmpOut, file = "results/limma/s_vs_a_limma.txt", quote = F, sep = "\t", row.names = F)
 # for Metacore/IPA
 write.table(tmpOut[which(abs(tmpOut$logFC) > 1),], file = "results/limma/s_vs_a_limma_logfc1.txt", quote = F, row.names = F, sep = "\t")
 write.table(tmpOut[which(tmpOut$logFC > 1),], file = "results/limma/s_vs_a_up_logfc1.txt", quote = F, row.names = F, sep = "\t")
-write.table(tmpOut[which(tmpOut$logFC < -1),], file = "results/limma/s_vs_a_down_logfc1.txt", quote = F, row.names = F, sep = "\t")
 # for stemchecker
 write.table(up$Gene, file = 'data/stemchecker-input-svsa-up.txt', quote = F, row.names = F, col.names = F)
 write.table(down$Gene, file = 'data/stemchecker-input-svsa-down.txt', quote = F, row.names = F, col.names = F)
@@ -102,26 +101,24 @@ tmpOut$Gene <- rownames(tmpOut)
 tmpOut <- tmpOut[,c("Gene","logFC","adj.P.Val")]
 up <- tmpOut[which(tmpOut$logFC > 0),] # 655
 down <- tmpOut[which(tmpOut$logFC < 0),] # 2271
-write.table(tmpOut, file = "results/limma/sus_vs_tissue_limma.txt", quote = F, sep = "\t", row.names = F)
+write.table(tmpOut, file = "results/limma/s_vs_tissue_limma.txt", quote = F, sep = "\t", row.names = F)
 # for Metacore/IPA
 write.table(tmpOut[which(abs(tmpOut$logFC) > 1),], file = "results/limma/s_vs_tissue_limma_logfc1.txt", quote = F, row.names = F, sep = "\t")
 write.table(tmpOut[which(tmpOut$logFC > 1),], file = "results/limma/s_vs_tissue_up_logfc1.txt", quote = F, row.names = F, sep = "\t")
-write.table(tmpOut[which(tmpOut$logFC < -1),], file = "results/limma/s_vs_tissue_down_logfc1.txt", quote = F, row.names = F, sep = "\t")
 # for stemchecker
 write.table(rownames(up), file = 'data/stemchecker-input-svstissue-up.txt', quote = F, row.names = F, col.names = F)
 write.table(rownames(down), file = 'data/stemchecker-input-svstissue-down.txt', quote = F, row.names = F, col.names = F)
 
-# Adhesion vs. Solid Tissue
+# Solid Tissue vs Adhesion
 tmpOut <- topTable(fit2, coef = 3, number = Inf, p.value = 0.05)[,c("logFC", "P.Value", "adj.P.Val")]
 tmpOut$Gene <- rownames(tmpOut)
 tmpOut <- tmpOut[,c("Gene","logFC","adj.P.Val")]
-up <- tmpOut[which(tmpOut$logFC > 0),] # 1264
-down <- tmpOut[which(tmpOut$logFC < 0),] # 8588
-write.table(tmpOut, file = "results/limma/adh_vs_tissue_limma.txt", quote = F, sep = "\t", row.names = F)
+up <- tmpOut[which(tmpOut$logFC > 0),] # 8588
+down <- tmpOut[which(tmpOut$logFC < 0),] # 1264
+write.table(tmpOut, file = "results/limma/tissue_vs_a_limma.txt", quote = F, sep = "\t", row.names = F)
 # for Metacore/IPA
-write.table(tmpOut[which(abs(tmpOut$logFC) > 1),], file = "results/limma/a_vs_tissue_limma_logfc1.txt", quote = F, row.names = F, sep = "\t")
-write.table(tmpOut[which(tmpOut$logFC > 1),], file = "results/limma/a_vs_tissue_up_logfc1.txt", quote = F, row.names = F, sep = "\t")
-write.table(tmpOut[which(tmpOut$logFC < -1),], file = "results/limma/a_vs_tissue_down_logfc1.txt", quote = F, row.names = F, sep = "\t")
+write.table(tmpOut[which(abs(tmpOut$logFC) > 1),], file = "results/limma/tissue_vs_a_limma_logfc1.txt", quote = F, row.names = F, sep = "\t")
+write.table(tmpOut[which(tmpOut$logFC > 1),], file = "results/limma/tissue_vs_a_up_logfc1.txt", quote = F, row.names = F, sep = "\t")
 
 # # 2. paired analysis - not feasible
 # meta$pairs <- gsub('_.*','',meta$id)

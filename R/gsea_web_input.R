@@ -59,3 +59,9 @@ gsea.input(counts.collapsed, groups = c("s","solid_tissue"),
            cls.file = 'data/gsea_input/phenotype_s_vs_st.cls',
            control = '# Suspension',
            treat = 'Solid_Tissue')
+
+gsea.input(counts.collapsed, groups = c("solid_tissue","a"), 
+           gct.file = 'data/gsea_input/raw/input_mat_st_vs_a.gct',
+           cls.file = 'data/gsea_input/phenotype_st_vs_a.cls',
+           control = '# Adhesion',
+           treat = 'Solid_Tissue')
