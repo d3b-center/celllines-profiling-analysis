@@ -4,6 +4,7 @@
 
 library(data.table)
 library(dplyr)
+library(xlsx)
 
 # meta data
 meta <- read.xlsx('data/201910_Cell_line_byDerivedType_PBTA_KF_ID.xlsx', 3)
