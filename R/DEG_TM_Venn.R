@@ -5,13 +5,15 @@
 library(dplyr)
 library(VennDiagram)
 library(gridExtra)
+library(xlsx)
 
 # read DEGs
 s.vs.tissue <- read.delim('results/limma/s_vs_tissue_limma_sig.txt', stringsAsFactors = F)
 a.vs.tissue <- read.delim('results/limma/a_vs_tissue_limma_sig.txt', stringsAsFactors = F)
 
 # surface proteins
-load('~/Projects/marislab-webportal/data/TMlist.RData')
+load('data/TMlist.RData')
+colnames(TMlist)[1] <- "hgnc_symbol"
 s.vs.tissue$TM <-  ifelse(s.vs.tissue$Gene %in% TMlist$hgnc_symbol, "Yes", "No")
 s.vs.tissue <- s.vs.tissue %>% filter(TM == "Yes")
 s.vs.tissue$Label <- "Suspension_vs_SolidTissue"
@@ -86,5 +88,3 @@ create.venn <- function(direction, fname){
 create.venn(direction = "up", fname = "DEG_UP_TM")
 create.venn(direction = "down", fname = "DEG_DOWN_TM")
 create.venn(direction = "", fname = "DEG_TM")
-
-

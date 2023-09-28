@@ -1,6 +1,6 @@
 # Author: Komal S. Rathi
 # Date: 02/17/2019
-# Function: Volcano plots of TMM proteins
+# Function: Volcano plots of Transmembrane proteins
 
 library(dplyr)
 library(ggplot2)
@@ -22,7 +22,7 @@ common <- common %>%
   unique()
 
 # surface proteins
-load('~/Projects/marislab-webportal/data/TMlist.RData')
+load('data/TMlist.RData')
 
 # create volcano plot
 plotVolcano <- function(x, TM = TRUE, title = "Volcano Plot", otherCol = c("blue","gray","red"), pval.cutoff = 0.05, fc.cutoff =  1, goi) {
@@ -37,7 +37,7 @@ plotVolcano <- function(x, TM = TRUE, title = "Volcano Plot", otherCol = c("blue
                                          no = "Unchanged")),
            tmm = ifelse(Gene %in% TMlist$hgnc_symbol, T, F))
   
-  # filter to TMM
+  # filter to Transmembrane
   if(TM == TRUE){
     x <- x %>%
       filter(tmm == TRUE)
@@ -63,8 +63,8 @@ plotVolcano <- function(x, TM = TRUE, title = "Volcano Plot", otherCol = c("blue
 }
 
 pdf(file = "results/limma/summary/volcano-plots.pdf", width = 8, height = 6)
-plotVolcano(x = s.vs.tissue, title = "Suspension vs Solid Tissue\nTMM Genes", TM = TRUE, goi = common)
-plotVolcano(x = a.vs.tissue, title = "Adherent vs Solid Tissue\nTMM Genes", TM = TRUE, goi = common)
+plotVolcano(x = s.vs.tissue, title = "Suspension vs Solid Tissue\nTransmembrane Genes", TM = TRUE, goi = common)
+plotVolcano(x = a.vs.tissue, title = "Adherent vs Solid Tissue\nTransmembrane Genes", TM = TRUE, goi = common)
 dev.off()
 
 # version 2 (combined plots and define shape by common genes)
@@ -80,7 +80,7 @@ plotVolcano <- function(x, TM = TRUE, title = "Volcano Plot", otherCol = c("blue
                                          no = "Unchanged")),
            tmm = ifelse(Gene %in% TMlist$hgnc_symbol, T, F))
   
-  # filter to TMM
+  # filter to Transmembrane
   if(TM == TRUE){
     x <- x %>%
       filter(tmm == TRUE)
@@ -118,6 +118,6 @@ pdf(file = "results/limma/summary/volcano-plots-combined.pdf", width = 12, heigh
 s.vs.tissue$label <- 'S vs T'
 a.vs.tissue$label <- 'A vs T'
 x <- rbind(s.vs.tissue, a.vs.tissue)
-plotVolcano(x = x, title = "Suspension and Adhesion vs Solid Tissue\nTMM Genes", TM = TRUE)
+plotVolcano(x = x, title = "Suspension and Adhesion vs Solid Tissue\nTransmembrane Genes", TM = TRUE)
 dev.off()
 
