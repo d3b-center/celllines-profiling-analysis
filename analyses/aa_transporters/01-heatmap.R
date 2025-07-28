@@ -45,12 +45,12 @@ count_dat <- count_dat %>%
   filter(rownames(count_dat) %in% gencode_gtf$gene_name)
 
 # remove low expression genes
-count_dat <- DGCA::filterGenes(
-  inputMat = count_dat,
-  filterTypes = c("central", "dispersion"),
-  filterDispersionType = "cv",
-  filterDispersionPercentile = 0.2,
-  sequential = TRUE)
+# count_dat <- DGCA::filterGenes(
+#   inputMat = count_dat,
+#   filterTypes = c("central", "dispersion"),
+#   filterDispersionType = "cv",
+#   filterDispersionPercentile = 0.2,
+#   sequential = TRUE)
 
 # DESeq2 dds object
 dds <- DESeq2::DESeqDataSetFromMatrix(
@@ -145,11 +145,14 @@ mycolors <- lapply(colors, function(x) unlist(x))
 # set NA to N/A
 hist_df[is.na(hist_df)] <- "N/A"
 
+# combine Serum-free-1 and 2 to Serum-free
+hist_df <- hist_df %>%
+  mutate(cell_line_composition = ifelse(cell_line_composition %in% c("Serum-free-1", "Serum-free-2"), "Serum-free", cell_line_composition))
+
 # generate heatmap
 matrix_colors = colorRampPalette(c("cadetblue3", "white", "coral3"))(25)
 pdf(file = file.path(plots_dir, "hgat_cellline_heatmap.pdf"), width = 14)
-pheatmap(noiseq_dat, 
-         facet = "cell_line_composition",
+pheatmap::pheatmap(as.matrix(noiseq_dat), 
          scale = "row", 
          color = matrix_colors,
          annotation_col = hist_df %>%
@@ -187,7 +190,7 @@ top_anno <- ComplexHeatmap::HeatmapAnnotation(
   col = mycolors,
   which = 'column'
 )
-hist_df$cell_line_composition <- factor(hist_df$cell_line_composition, levels = c("Serum-based", "Serum-free", "Serum-free-1", "Serum-free-2"))
+hist_df$cell_line_composition <- factor(hist_df$cell_line_composition, levels = c("Serum-based", "Serum-free"))
 ht <- ComplexHeatmap::Heatmap(
   matrix = scaled_df,
   top_annotation = top_anno,
