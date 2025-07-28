@@ -3,6 +3,8 @@ suppressPackageStartupMessages({
   library(DESeq2)
   library(pheatmap)
   library(NOISeq)
+  library(ComplexHeatmap)
+  library(circlize)
 })
 
 # set directories
@@ -20,7 +22,7 @@ source(file.path(analysis_dir, "utils", "plot_pca.R"))
 count_dat <- readRDS(file.path(data_dir, "20250115", "20250115_release.gene-counts-rsem-expected_count-collapsed.all.rds"))
 
 # read histologies
-hist_df <- read_tsv(file.path(data_dir, "20250115", "20250115_release.annotated_histologies.tsv"))
+hist_df <- data.table::fread(file.path(data_dir, "20250115", "20250115_release.annotated_histologies.tsv"))
 
 # subset to HGAT cell line data
 hist_df <- hist_df %>%
@@ -147,6 +149,7 @@ hist_df[is.na(hist_df)] <- "N/A"
 matrix_colors = colorRampPalette(c("cadetblue3", "white", "coral3"))(25)
 pdf(file = file.path(plots_dir, "hgat_cellline_heatmap.pdf"), width = 14)
 pheatmap(noiseq_dat, 
+         facet = "cell_line_composition",
          scale = "row", 
          color = matrix_colors,
          annotation_col = hist_df %>%
@@ -155,4 +158,59 @@ pheatmap(noiseq_dat,
          angle_col = 45, 
          annotation_colors = mycolors, 
          main = paste0("HGAT Derived Cell Lines (n = ", ncol(noiseq_dat), ")", "\nVST normalized Counts"))
+dev.off()
+
+# scale/z-score each cell line composition type separately and then combine
+cell_lines <- unique(hist_df$cell_line_composition)
+scaled_df <- data.frame()
+for(i in 1:length(cell_lines)){
+  print(i)
+  hist_sub <- hist_df %>%
+    filter(cell_line_composition == cell_lines[i])
+  noiseq_sub <- noiseq_dat %>%
+    dplyr::select(hist_sub$Kids_First_Biospecimen_ID) %>%
+    as.data.frame() 
+  noiseq_sub <- noiseq_sub %>%
+    mutate_at(c(colnames(noiseq_sub)), ~ (scale(.) %>% as.vector))
+  if(i == 1){
+    scaled_df <- noiseq_sub
+  } else {
+    scaled_df <- cbind(scaled_df, noiseq_sub)
+  }
+}
+
+# use complex heatmap to create a split heatmap 
+top_anno <- ComplexHeatmap::HeatmapAnnotation(
+  df = hist_df %>%
+    column_to_rownames("Kids_First_Biospecimen_ID") %>%
+    dplyr::select(cell_line_composition, RNA_library, tumor_descriptor, CNS_region, molecular_subtype),
+  col = mycolors,
+  which = 'column'
+)
+hist_df$cell_line_composition <- factor(hist_df$cell_line_composition, levels = c("Serum-based", "Serum-free", "Serum-free-1", "Serum-free-2"))
+ht <- ComplexHeatmap::Heatmap(
+  matrix = scaled_df,
+  top_annotation = top_anno,
+  column_split = hist_df$cell_line_composition,
+  column_title_rot = 30,
+  name = "matrix",
+  row_names_side = "right",
+  row_dend_side = "left",
+  heatmap_legend_param = list(
+    title = "VST normalized counts"
+  ),
+  show_column_names = FALSE
+)
+pdf(
+  file = file.path(plots_dir, "hgat_cellline_heatmap_split.pdf"),
+  height = 10,
+  width = 15
+)
+draw(
+  ht,
+  heatmap_legend_side = "right",
+  annotation_legend_side = "right",
+  merge_legend = T,
+  padding = unit(c(2, 10, 2, 10), "mm")
+)
 dev.off()
